@@ -63,7 +63,7 @@ export const login = async (
       if (err) throw new AppError(400, err.message)
       if (isMatch) {
         const token = jwt.sign({ id: user._id?.toString() }, key, {
-          expiresIn: '2 days',
+          expiresIn: '1 days',
         })
 
         return res.status(200).json({ user, token })

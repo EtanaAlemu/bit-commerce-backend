@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express'
 // models
 import User from '../models/User'
 import { UserDocument } from '../types/user.type'
-import { DatabaseError } from '../errors/database-error'
 import { AppError } from '../middleware/error.middleware'
 
 /**
@@ -16,25 +15,22 @@ export const getUsers = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { email, password, firstName, lastName }: UserDocument = req.body
+  const page =
+    req.query.page && typeof req.query.page == 'string'
+      ? parseInt(req.query.page)
+      : 1
+  const limit =
+    req.query.limit && typeof req.query.limit == 'string'
+      ? parseInt(req.query.limit)
+      : 10
+
+  // calculating the starting and ending index
+  const skip = (page - 1) * limit
   try {
-    const user = new User({
-      email,
-      password,
-      firstName,
-      lastName,
-    })
+    const users = await User.find().skip(skip).limit(limit)
+    const total = await User.count()
 
-    const existingUser = await User.findOne({ email })
-
-    if (existingUser) {
-      throw new AppError(400, 'Account with that email address already exists.')
-    }
-    await user.save().catch(err => {
-      throw new DatabaseError(err)
-    })
-
-    res.status(201).json(user)
+    res.status(200).json({ users, total })
   } catch (err) {
     return next(err)
   }
